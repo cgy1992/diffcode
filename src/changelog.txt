@@ -1,0 +1,11 @@
+
+目前还存在的bug
+    * 偶现。proxy 代理机器scp 服务器到本地来，然后网络http返回，打开文件会有No such file or directory。是否可以使用ssh 公钥、私钥？yolang说弄一个flag文件
+    * 偶现。proxy broken pipe
+
+20140108
+	* 增加异常机制，返回给用户更多信息
+
+20140107
+    * 使用expect登录SSH的时候，增加exit命令，速度提升。取消timeout有些慢，ssh间歇性抽风
+    

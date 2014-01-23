@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=8" />
+<title>Diffcode</title>
+<!-- <script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
+<script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+<link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet"> -->
+
+<link href="bootstrap.css" rel="stylesheet">
+<link href="select2/select2.css" rel="stylesheet">
+<link type="text/css" rel="stylesheet" href="mergely-3.3.4/lib/codemirror.css" />
+<link type="text/css" rel="stylesheet" href="mergely-3.3.4/lib/mergely.css" />
+<style type="text/css">
+<!--
+input,button,textarea{
+	outline : none;
+}
+body{
+	padding : 2em
+}
+.leftDiv,.rightDiv{
+	float :left;
+	width : 49%;
+	padding : 1em;
+}
+.chooseDiv{
+	overflow:hidden;
+}
+.leftrightcontainer{
+	overflow : hidden;
+}
+.confim{
+	margin : 1em;
+}
+#chooseComponent{
+	width: 70%
+}
+#s2id_chooseComponent{
+	width: 70%
+}
+
+/****************for diff dialog***************/
+.diffbutton{
+	margin-left: 2em;
+}
+.difffile-dialog{
+	width : 80%;
+}
+#modalDiv .modal-body{
+	overflow: hidden;
+}
+/**************end diff dialog******************/
+
+footer{
+	margin: 2em;
+	text-align: center;
+}
+-->
+</style>
+<script src="jquery.js"></script>
+<script src="bootstrap.js"></script>
+<script src="select2/select2.min.js"></script>
+<!-- Requires CodeMirror -->
+<script type="text/javascript" src="mergely-3.3.4/lib/codemirror.js"></script>
+<script type="text/javascript" src="mergely-3.3.4/lib/mergely.js"></script>
+
+</head>
+<body>
+
+
+<div class="main">
+<!-- <div class="alert alert-danger">目前只支持Chrome、Firefox等html5浏览器，忽略IE9及其以下</div> -->
+<div class="chooseDiv">
+
+	<div class="chooseComponentDiv">
+		现网组件
+		<select id="chooseComponent"><option>组建加载中...</option></select>
+	</div>
+	<div class="leftrightcontainer">
+		<div class="leftDiv">
+			<div id="leftChooseTypeDiv">类别：
+				<span>
+					<label><input name="leftfileSystemType" type="radio" value="svn" />svn</label>
+					<label><input name="leftfileSystemType" type="radio" value="ssh" />现网</label>
+				</span>
+			</div>
+			
+			
+			<div class="chooseSVNDiv">
+				URI地址：<input class="form-control svnURLInput uriInput" type="text" />
+			</div>
+			
+		</div>
+		<div class="rightDiv">
+			<div  id="rightChooseTypeDiv">类别：
+				<span>
+					<label><input name="rightfileSystemType" type="radio" value="svn" />svn</label>
+					<label><input name="rightfileSystemType" type="radio" value="ssh" />现网</label>
+				</span>
+			</div>
+			
+			
+			
+			
+			<div class="chooseSVNDiv">
+				URI地址：<input class="form-control svnURLInput uriInput" type="text" />
+			</div>
+			
+			
+		</div>
+	</div>
+	<div class="confim">
+		<div>
+				忽略文件
+				<textarea id="ignoreFiles"  class="form-control ignoreFile" disabled></textarea>
+			</div>
+		<button type="button" id="submit" class="btn btn-primary" >提交</button>
+	</div>
+</div><!-- /chooseDiv -->
+
+
+
+<div class="diffFileDiv">
+	<div class="alert alert-warning">提醒：比较结果里的差异文件可能是由于文件最后一行多了换行符</div>
+	比较时间
+	<div id="diffdate"></div>
+	比较结果
+	<div id="diffresult">
+			<!-- <ul>
+				<li><span class="difffilepath">a.r</span><span class="diffbutton btn btn-success btn-xs">diff</span></li>
+				<li><span class="difffilepath">a.r</span><span class="diffbutton btn btn-success btn-xs">diff</span></li>
+				<li><span class="difffilepath">a.r</span><span class="diffbutton btn btn-success btn-xs">diff</span></li>
+				<li><span class="difffilepath">a.r</span><span class="diffbutton btn btn-success btn-xs">diff</span></li>
+			</ul> -->
+	</div>
+	<img id="ajaxloader" src="ajaxloader.gif" />
+
+</div>
+
+</div><!-- /main -->
+<footer>
+	<div>管理员：dondonchen</div>
+	<div style="display:none">
+		20140118 增加js的diff文件<br />
+		20140105 文件全部转unix换行符
+	</div>
+</footer>
+
+
+<!-- 弹出框 -->
+<div id="modalDiv">
+	<!-- Modal -->
+	<div class="modal fade" id="mydiffModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	  <div class="modal-dialog difffile-dialog">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	        <h4 class="modal-title" id="myModalLabel">查看差异代码</h4>
+	      </div>
+	      <div class="modal-body">
+		        <div id="mergely-resizer">
+					<div id="compare">
+					</div>
+				</div>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	      </div>
+	    </div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+</div>
+
+
+
+<!-- <div class="alert alert-dismissable">
+  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  <div id="alertMessage">123123</div>
+</div> -->
+
+
+<script>
+$(document).ready(function($){
+	$("#ajaxloader").hide();
+
+
+	$("#leftChooseTypeDiv input[name='leftfileSystemType']").click(function(event){
+		if(this.value == 'svn'){
+			$(".leftDiv .chooseSVNDiv input").attr("disabled",false);
+
+		}else if(this.value == 'ssh'){
+			$(".leftDiv .chooseSVNDiv input").attr("disabled",true)
+		}
+	});
+	
+	$("#rightChooseTypeDiv input[name='rightfileSystemType']").click(function(event){
+		if(this.value == 'svn'){
+			$(".rightDiv .chooseSVNDiv input").attr("disabled",false);
+		}else if(this.value == 'ssh'){
+			$(".rightDiv .chooseSVNDiv input").attr("disabled",true)
+		}
+	});
+	
+	
+	$("#leftChooseTypeDiv input[value='svn']").click();
+	$("#rightChooseTypeDiv input[value='ssh']").click();
+
+
+	component = {
+		init : function(){
+			$.post("./ajaxGetComponent.php" , function(data){
+				component.All = data;	
+				initcomponent();
+			})
+		}
+	}
+
+	component.init();
+
+
+	function initcomponent(){
+		
+		var optionHTML = "<option></option>";
+		for(var key in component.All){
+			optionHTML += "<option value="+key+">"+ key + "</option>"
+		}
+		$("#chooseComponent").html(optionHTML);
+
+		$("#chooseComponent").select2({
+			placeholder: "请选择组件"
+		});
+
+	}
+
+	
+	$("#submit").click(function(e){
+
+		submit();
+	});
+
+
+	$("#chooseComponent").on("change", function(e) {
+		type = this.value;
+		if (type== '请选择组建') {return;}
+		$("#ignoreFiles").val(component.All[type]['ignore']);
+		$(".leftDiv .uriInput").val(component.All[type]['svn.uri']);
+		$(".rightDiv .uriInput").val(component.All[type]['ssh.uri']);
+	});
+
+
+	/*change(function(e){
+		type = this.value;
+		$("#ignoreFiles").val(component.All[type]['ignore']);
+		$(".svnURLInput").val(component.All[type]['svn.uri']);
+	});*/
+
+});
+</script>
+<script>
+
+function submit(){
+	
+
+	var leftType = $("input[name='leftfileSystemType']:checked").val();
+	var rightType = $("input[name='rightfileSystemType']:checked").val();
+
+	var param ={};
+	param.leftType= leftType;
+	param.rightType=rightType;
+	param.sessionName = $('#chooseComponent').val();
+	param.leftURI = $(".leftDiv .uriInput").val();
+	param.rightURI = $(".rightDiv .uriInput").val();
+
+	if(param.sessionName == '请选择组建'){
+		alert("请选择组建");
+		return;
+	}
+	
+	//paramstring = JSON.stringify(param);
+	
+	//p={"paramjsonstring": paramstring}
+	$("#ajaxloader").show();
+	$("#diffresult").html("");
+	$.post("./diff.php",param,function(data){
+		$("#ajaxloader").hide();
+		data = JSON.parse(data);
+		console.log(data);
+		//$("#diffresult").html(data);
+
+		$("#diffdate").html(data.date);
+		if(data.retcode ==0 ){
+			if(data.cmdresult.retcode == 0){
+				cmdresult = data.cmdresult;
+
+				difffile = cmdresult['difflist'];
+
+				if(difffile.length ==0 ){
+					$("#diffresult").html("很棒，没有差异文件");
+					return;
+				}
+
+				filelist = ""
+				for (var i = 0; i < difffile.length; i++) {
+					file = '<span class="difffilepath">'+difffile[i]+'</span>';
+					diff = '<span class="diffbutton btn btn-success btn-xs">diff</span>';
+					filelist += "<li>"+file+diff+"</li>"
+				};
+				$("#diffresult").html("<ul>"+filelist+"</ul>");
+			}else{
+				var html=$("<div></div>").text(data.cmdresult.message.replace(/\n/g,"<br>")).html();
+				$("#diffresult").html(html);	
+			}
+			
+		}else{
+			$("#diffresult").html(data.message);
+		}
+		
+
+		
+	});
+}
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+	$("#diffresult").on("click" , ".diffbutton" , function(e){
+		var filepath = $(this).siblings(".difffilepath").text();
+		var componentName = $('#chooseComponent').val();
+		
+		var left = componentName + "/left/" + filepath;
+		var right = componentName + "/right/" + filepath;
+		// var width = $("#modalDiv").width() * 0.6 ;  
+
+		$('#compare').mergely({
+				height: 500,
+				width : 1000,
+				cmsettings: {
+					readOnly: true, 
+					lineWrapping: true,
+				}
+		});
+		$.ajax({
+			type: 'GET', async: true, dataType: 'text',
+			url: '/getContent.php?filepath='+left,
+			success: function (response) {
+				$('#compare').mergely('lhs', response);
+			}
+		});
+		$.ajax({
+			type: 'GET', async: true, dataType: 'text',
+			url: '/getContent.php?filepath='+right,
+			success: function (response) {
+				$('#compare').mergely('rhs', response);
+			}
+		});
+
+
+		$('#mydiffModal').modal('show');
+
+	});
+});
+</script>
+
+</body>
+
+</html>
+<!-- test1 -->
