@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
-VERSION = '1.2.1'
+VERSION = '1.2.3'
 
 目前还存在的bug
     * 偶现。代理机器scp 服务器到本地来，然后网络http返回，打开文件会有No such file or directory。是否可以使用ssh 公钥、私钥？yolang说弄一个flag文件
@@ -9,7 +9,8 @@ VERSION = '1.2.1'
 
 20140107
     * 使用expect登录SSH的时候，增加exit命令，速度提升。取消timeout有些慢，ssh间歇性抽风
-    
+ 20140211
+    * 响应结束后，删除文件。防止硬盘过大   
 
 '''
 
@@ -47,8 +48,10 @@ class WebRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.close()
         
         ##clear local file
-        #p =subprocess.Popen("rm ./download/%s" % filename , stdout=subprocess.PIPE, shell=True)
-        #(output, err) = p.communicate()
+        p =subprocess.Popen("rm ./proxydownload/%s" % filename , stdout=subprocess.PIPE,stderr=subprocess.PIPE, shell=True)
+        (output, err) = p.communicate()
+        if err != "":
+            print err
 
         
 
