@@ -9,7 +9,10 @@ import subprocess
 from datetime import date
 import time
 
-ENVERONMENT = "dev"
+'''
+程序使用的一些配置信息。考虑是用户传还是自己读取
+'''
+CONFIG_PATH = './config/config.ini'
 
 LOG_FILE_PATH =   os.path.join( os.getcwd(), "log","foldercmp_"+date.today().strftime("%Y%m%d")+'.log')
 logging.basicConfig(level=logging.DEBUG,
@@ -76,7 +79,6 @@ class SVNFileSystem(FileSystem):
         pass
 
 class SSHFileSystem(FileSystem):
-    PROXY = "http://192.168.195.128:8899/"
     def __init__(self,session,ns,param):
         self.session = session
 
@@ -90,10 +92,10 @@ class SSHFileSystem(FileSystem):
         self.exclude = param[ns]['exclude'].replace(" ","")
 
         ##TODO(需要解决，不赋值)
-        if ENVERONMENT == 'dev':
-            self.__class__.PROXY = "http://192.168.195.128:8899/download"
-        elif ENVERONMENT == 'product':
-            self.__class__.PROXY = "http://gz.proxy.diffcode.isd.com/download"
+        #self.proxy = "http://192.168.195.128:8899/download"
+        config = ConfigParser.ConfigParser()
+        config.read(CONFIG_PATH)
+        self.proxy = config.get('common','proxy')
 
 
     def readyFiles(self,toFilePath):
@@ -117,9 +119,9 @@ class SSHFileSystem(FileSystem):
                     filepath=self.uri,filename=self.filename,exclude=self.exclude)
         #print data
         #p = {"paramjsonstring":json.dumps(data)}
-        log("download url = "+self.__class__.PROXY)
+        log("download url = "+self.proxy)
         ##TODO 超时的问题
-        r= urllib2.urlopen(self.__class__.PROXY, data=urllib.urlencode(data))
+        r= urllib2.urlopen(self.proxy, data=urllib.urlencode(data))
         #print len(r.read())
         log("access url to download")
         output = open("./download/"+self.filename,'w')
@@ -194,7 +196,7 @@ class CompareSession:
         self.rightSystem.readyFiles(self.__class__.BASE_DIR+"/cmpfolder/"+self.sessionName+"/right/")
         
         '''dos2unix to solve line breaker'''
-        cmd = '''cd %s ; find -type f  -exec echo '"{}"' \; | xargs dos2unix --safe -q ''' % (self.__class__.BASE_DIR+"/cmpfolder/"+self.sessionName,)
+        cmd = '''cd %s ; find -type f  -exec echo '"{}"' \; | xargs dos2unix -k --safe -q ''' % (self.__class__.BASE_DIR+"/cmpfolder/"+self.sessionName,)
         log("cmd = "+cmd)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         (output, err) = p.communicate()
@@ -361,6 +363,3 @@ if __name__ == '__main__':
 #fcmp.getDiffFiles(projCmpObj)
     #print sys.argv[1]
     pass
-
-
-
