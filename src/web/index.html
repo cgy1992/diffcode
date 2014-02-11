@@ -11,8 +11,9 @@
 
 <link href="bootstrap.css" rel="stylesheet">
 <link href="select2/select2.css" rel="stylesheet">
-<link type="text/css" rel="stylesheet" href="mergely-3.3.4/lib/codemirror.css" />
-<link type="text/css" rel="stylesheet" href="mergely-3.3.4/lib/mergely.css" />
+<!-- <link type="text/css" rel="stylesheet" href="mergely-3.3.4/lib/codemirror.css" />
+<link type="text/css" rel="stylesheet" href="mergely-3.3.4/lib/mergely.css" /> -->
+<link type="text/css" rel="stylesheet" href="jsdifflib/diffview.css" />
 <style type="text/css">
 <!--
 input,button,textarea{
@@ -52,6 +53,12 @@ body{
 #modalDiv .modal-body{
 	overflow: hidden;
 }
+
+
+
+.inlinediff tr td{
+	width: 100%;
+}
 /**************end diff dialog******************/
 
 footer{
@@ -64,9 +71,10 @@ footer{
 <script src="bootstrap.js"></script>
 <script src="select2/select2.min.js"></script>
 <!-- Requires CodeMirror -->
-<script type="text/javascript" src="mergely-3.3.4/lib/codemirror.js"></script>
-<script type="text/javascript" src="mergely-3.3.4/lib/mergely.js"></script>
-
+<!-- <script type="text/javascript" src="mergely-3.3.4/lib/codemirror.js"></script>
+<script type="text/javascript" src="mergely-3.3.4/lib/mergely.js"></script> -->
+<script type="text/javascript" src="jsdifflib/difflib.js"></script>
+<script type="text/javascript" src="jsdifflib/diffview.js"></script>
 </head>
 <body>
 
@@ -324,7 +332,8 @@ function submit(){
 }
 </script>
 
-
+<!--
+mergely 的diff，不是太好用
 <script type="text/javascript">
 $(document).ready(function() {
 	$("#diffresult").on("click" , ".diffbutton" , function(e){
@@ -364,6 +373,80 @@ $(document).ready(function() {
 	});
 });
 </script>
+-->
+
+
+<script type="text/javascript">
+$(function(){
+	$("#diffresult").on("click" , ".diffbutton" , function(e){
+
+		var readystep = 0 , TotalStep = 2 ;
+		var baseText,newText;
+
+		var filepath = $(this).siblings(".difffilepath").text();
+		var componentName = $('#chooseComponent').val();
+		
+		var left = componentName + "/left/" + filepath;
+		var right = componentName + "/right/" + filepath;
+		// var width = $("#modalDiv").width() * 0.6 ;  
+
+		$.ajax({
+			type: 'GET', async: true, dataType: 'text',
+			url: '/getContent.php?filepath='+left,
+			success: function (response) {
+				//$('#compare').mergely('lhs', response);
+				readystep++;
+				baseText = response;
+				success();
+			}
+		});
+		$.ajax({
+			type: 'GET', async: true, dataType: 'text',
+			url: '/getContent.php?filepath='+right,
+			success: function (response) {
+				//$('#compare').mergely('rhs', response);
+				readystep++;
+				newText = response;
+				success();
+			}
+		});
+
+		function success(){
+			if(readystep == TotalStep){
+				var base = difflib.stringAsLines(baseText),
+				newtxt = difflib.stringAsLines(newText);
+				var sm = new difflib.SequenceMatcher(base, newtxt);
+
+			    // get the opcodes from the SequenceMatcher instance
+			    // opcodes is a list of 3-tuples describing what changes should be made to the base text
+			    // in order to yield the new text
+			    var opcodes = sm.get_opcodes();
+			    var diffoutputdiv = $("#compare")[0];
+			    while (diffoutputdiv.firstChild) diffoutputdiv.removeChild(diffoutputdiv.firstChild);
+			    var contextSize = $("contextSize").value;
+			    contextSize = contextSize ? contextSize : null;
+
+			    // build the diff view and add it to the current DOM
+			    diffoutputdiv.appendChild(diffview.buildView({
+			        baseTextLines: base,
+			        newTextLines: newtxt,
+			        opcodes: opcodes,
+			        // set the display titles for each resource
+			        baseTextName: "left Text",
+			        newTextName: "right Text",
+			        contextSize: "800px",
+			        viewType:  1 
+			    }));
+			    $('#mydiffModal').modal('show');
+				readystep = 0;
+			}
+		}
+
+
+		
+
+	});
+})</script>
 
 </body>
 
